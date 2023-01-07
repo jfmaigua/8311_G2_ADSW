@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-no-comment-textnodes */
-import "./App.css";
+import "../App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import {
   Table,
@@ -60,7 +60,7 @@ class App extends React.Component {
     axios
       .put(url + "/" + this.state.form.idProducto, this.state.form)
       .then((response) => {
-        this.modalInsert();
+        this.setState({ modalEdit: false })
         this.getQuery();
       });
   };
@@ -119,7 +119,7 @@ class App extends React.Component {
         fecha: element.fecha,
         precio: element.precio,
         cantidad: element.cantidad,
-        total: element.total,
+        total: element.precio*element.cantidad,
       },
     });
   };
@@ -162,7 +162,7 @@ class App extends React.Component {
                   <td>{element.fecha}</td>
                   <td>{element.precio}</td>
                   <td>{element.cantidad}</td>
-                  <td>{element.total}</td>
+                  <td>{element.cantidad*element.precio}</td>
                   <td>
                     <Button
                       className="btn btn-primary"
@@ -260,15 +260,6 @@ class App extends React.Component {
                 onChange={this.handleChange}
               />
               <br />
-              <label htmlFor="total">Total</label>
-              <input
-                className="form-control"
-                type="number"
-                name="total"
-                id="total"
-                onChange={this.handleChange}
-              />
-              <br />
             </div>
           </ModalBody>
 
@@ -362,27 +353,20 @@ class App extends React.Component {
                 value={form.cantidad}
               />
               <br />
-              <label htmlFor="total">Total</label>
-              <input
-                className="form-control"
-                type="number"
-                name="total"
-                id="total"
-                onChange={this.handleChange}
-                value={form.total}
-              />
-              <br />
             </div>
           </ModalBody>
 
           <ModalFooter>
-            <button className="btn btn-primary" onClick={() => this.putQuery()}>
+            <button 
+              className="btn btn-primary" 
+              onClick={() => this.putQuery()}
+              >
               Actualizar
             </button>
 
             <button
               className="btn btn-danger"
-              onClick={() => this.modalEditHide()}
+              onClick={() => this.setState({ modalEdit: false })}
             >
               Cancelar
             </button>

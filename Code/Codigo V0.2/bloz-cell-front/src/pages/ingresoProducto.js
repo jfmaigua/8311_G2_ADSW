@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-no-comment-textnodes */
-import "./App.css";
+import "../App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import {
   Table,
@@ -62,7 +62,7 @@ class App extends React.Component {
     axios
       .put(url + "/" + this.state.form.idProducto, this.state.form)
       .then((response) => {
-        this.modalInsert();
+        this.setState({ modalEdit: false })
         this.getQuery();
       });
   };
