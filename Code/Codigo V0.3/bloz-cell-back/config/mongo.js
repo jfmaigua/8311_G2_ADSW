@@ -8,8 +8,8 @@ const databaseConnection = () => {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     },
-    (err, res) => {
-      if (!err) {
+    (error, res) => {
+      if (!error) {
         console.log("CONEXION CORRECTA");
       }else{
         console.log("ERROR");

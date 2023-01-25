@@ -12,12 +12,25 @@ import {
 } from "reactstrap";
 import React from "react";
 import axios from "axios";
+import {Select, MenuItem, FormControl} from "@mui/material"
 
 const url = "http://localhost:3001/api/salida";
+const url1 = "http://localhost:3001/api/products";
+
 class App extends React.Component {
+  //constructor(props) {
+    //super(props);
   //Estado del data y del form
   state = {
+    
     data: [],
+    producto:[],
+    nombreProducto: "",
+    stock:0,
+    precio: 0,
+    nombre:"",
+    ofertas:[{tipo:"Descuento"},{tipo:"Promocion"}],
+    cantidadMaxima: 0,
     form: {
       idProducto: "",
       nombreProducto: "",
@@ -31,8 +44,11 @@ class App extends React.Component {
     modalInsert: false,
     modalDelete: false,
     modalEdit: false,
+    modalCantidad: false
   };
   
+  //this.handleChangeInput = this.handleChangeInput.bind(this);
+//}
   getQuery = () => {
     axios
       .get(url)
@@ -42,6 +58,18 @@ class App extends React.Component {
       .catch((error) => {
         console.log(error.message);
       });
+      console.log(this.state.data)
+  };
+  getQueryProducto = () => {
+    axios
+      .get(url1)
+      .then((response) => {
+        this.setState({ producto: response.data.data });
+      })
+      .catch((error) => {
+        console.log(error.message);
+      });
+      console.log(this.state.producto)
   };
 
   postQuery = async () => {
@@ -64,7 +92,19 @@ class App extends React.Component {
         this.getQuery();
       });
   };
-
+  putStock = () => {
+    let stockActualizar
+    for(let i=0;i<this.state.producto.length;i++){
+      if(this.state.form.nombreProducto===this.state.producto[i].nombre){
+        axios
+          .put(url1 + "/" + this.this.state.producto[i].idProducto, this.state.form)
+          .then((response) => {
+            this.setState({ modalEdit: false })
+            this.getQuery();
+          });
+      }
+    }
+  };
   deleteQuery = () => {
     axios.delete(url + "/" + this.state.form.idProducto).then((response) => {
       this.setState({ modalDelete: false });
@@ -73,18 +113,112 @@ class App extends React.Component {
   };
   componentDidMount() {
     this.getQuery();
+    this.getQueryProducto();
+    
+  }
+  //Formato Fecha
+  formatoFecha(fecha){
+    var fechaAux = new Date(fecha)
+    var dia = fechaAux.getDay();
+    var mes = fechaAux.getMonth()+1;
+    var anio = fechaAux.getFullYear();
+    return dia+"/"+mes+"/"+anio;
+  }
+  /*
+   handleChangeInput(evento){
+    console.log("Hola key")
+    //destructurin de los valores enviados por el metodo onchange de cada input
+    const { name, value } = evento.target;
+    let regex = new RegExp("^[a-zA-Z ]+$");
+
+    if (regex.test(value)) {
+      console.log(name, value);
+      this.setState({
+        //al elemento dentro de [] es una key de cada parametro dentro del
+        //estado.
+        [name]: value
+      });
+    } else {
+      console.log("es numero");
+    }
+  }
+  */
+  // Funcion actualizar stock
+  actualizarStock(id,cantidad){
+    for(let i=0;i<this.state.producto.length;i++){
+      if(id === this.state.producto[i].nombre)
+        if(cantidad>this.state.producto[i].cantidad){
+        this.setState({cantidadMaxima: this.state.producto[i].cantidad});
+        this.modalCantidad();
+        //buttonInsertar.disabled = true;
+      }else{
+        //buttonInsertar.disabled = false;
+        this.setState({precio: this.state.producto[i].precio})
+        this.setState({
+          form: {
+            ...this.state.form,
+            precio: this.state.precio,
+          },
+        })
+      }
+    }
+  }  
+  // Funcion control cantidad
+  controlCantidad(id, cantidad){
+    var buttonInsertar = document.getElementById('insertar');
+    for(let i=0;i<this.state.producto.length;i++){
+      if(id === this.state.producto[i].nombre)
+        if(cantidad>this.state.producto[i].cantidad){
+        this.setState({cantidadMaxima: this.state.producto[i].cantidad});
+        this.modalCantidad();
+        buttonInsertar.disabled = true;
+      }else{
+        buttonInsertar.disabled = false;
+        this.setState({precio: this.state.producto[i].precio})
+        this.setState({
+          form: {
+            ...this.state.form,
+            precio: this.state.precio,
+          },
+        })
+      }
+    }
+  }
+
+  //Cambiar precio
+  cambiarPrecio(){
+    for(let j=0;j<this.state.producto.length;j++){
+      console.log("nombre1: "+this.state.form.nombreProducto)
+      console.log("nombre2:"+this.state.producto[j].nombre)
+      if(this.state.form.nombreProducto === this.state.producto[j].nombre){
+        this.setState({precio: this.state.producto[j].precio})
+        this.setState({
+          form: {
+            ...this.state.form,
+            precio: this.state.precio,
+          },
+        })
+      }
+    }
   }
   //Controlador de cambios
   handleChange = (e) => {
-    e.persist();
+    e.stopPropagation()
     this.setState({
       form: {
         ...this.state.form,
         [e.target.name]: e.target.value,
       },
     });
+    console.log(this.state.form)
+    console.log(this.state.ofertas)
   };
-
+  // Modal Cantidad
+  modalCantidad = () => {
+    this.setState({
+      modalCantidad: !this.state.modalCantidad,
+    });
+  };
   //Modal insert
   modalInsert = () => {
     this.setState({
@@ -129,7 +263,7 @@ class App extends React.Component {
     const { form } = this.state;
     return (
       <>
-        <Container>
+      <Container>
           <br />
           <Button
             className="btn btn-success"
@@ -162,7 +296,7 @@ class App extends React.Component {
                   <td>{element.nombreProducto}</td>
                   <td>{element.nombreVendedor}</td>
                   <td>{element.tipoOferta}</td>
-                  <td>{element.fecha}</td>
+                  <td>{this.formatoFecha(element.fecha)}</td>
                   <td>{element.precio}</td>
                   <td>{element.cantidad}</td>
                   <td>{element.cantidad*element.precio}</td>
@@ -219,13 +353,22 @@ class App extends React.Component {
               />
               <br />
               <label htmlFor="nombreProducto">Nombre Producto</label>
-              <input
-                className="form-control"
-                type="text"
-                name="nombreProducto"
-                id="nombreProducto"
-                onChange={this.handleChange}
-              />
+              <FormControl fullWidth>
+              <Select
+                        fullWidth
+                        name='nombreProducto'
+                        id="nombreProducto"
+                        value={this.state.form.nombreProducto}
+                        onBlur={()=>this.cambiarPrecio()}
+                        onChange={this.handleChange}
+                    >
+                        {           
+                            this.state.producto.map(item => (
+                                <MenuItem value={item.nombre}>{item.nombre}</MenuItem>   
+                            ))
+                        }    
+                    </Select>
+              </FormControl>
               <br />
               <label htmlFor="nombreVendedor">Nombre Vendedor</label>
               <input
@@ -233,20 +376,28 @@ class App extends React.Component {
                 type="text"
                 name="nombreVendedor"
                 id="nombreVendedor"
+                value={this.state.form.nombreVendedor}
                 onChange={this.handleChange}
               />
               <br />
               <label htmlFor="tipoOferta">Tipo Oferta</label>
-              <select
+              <FormControl fullWidth>
+              <Select
               className="form-control" 
               type="text"
               name="tipoOferta" 
               id="tipoOferta"
+              value={this.state.form.tipoOferta}
+              //onBlur={()=>this.cambiarPrecio()}
               onChange={this.handleChange}
               >
-                <option value="Descuento">Descuento</option>
-                <option value="Promoción">Promoción</option>
-              </select>
+                {           
+                  this.state.ofertas.map(item1 => (
+                  <MenuItem value={item1.tipo}>{item1.tipo}</MenuItem>   
+                  ))
+                } 
+              </Select>
+              </FormControl>
               <br />
               <label htmlFor="fecha">Fecha</label>
               <input
@@ -258,6 +409,16 @@ class App extends React.Component {
                 onChange={this.handleChange}
               />
               <br />
+              <label htmlFor="cantidad">Cantidad</label>
+              <input
+                className="form-control"
+                type="number"
+                name="cantidad"
+                id="cantidad"
+                onBlur={()=> this.controlCantidad(form.nombreProducto,form.cantidad)}
+                onChange={this.handleChange}
+              />
+              <br />
               <label htmlFor="precio">Precio</label>
               <input
                 className="form-control"
@@ -265,15 +426,7 @@ class App extends React.Component {
                 name="precio"
                 id="precio"
                 onChange={this.handleChange}
-              />
-              <br />
-              <label htmlFor="cantidad">Cantidad</label>
-              <input
-                className="form-control"
-                type="number"
-                name="cantidad"
-                id="cantidad"
-                onChange={this.handleChange}
+                value={this.state.precio}                
               />
               <br />
               <label htmlFor="total">Total</label>
@@ -283,7 +436,7 @@ class App extends React.Component {
                 name="total"
                 id="total"
                 onChange={this.handleChange}
-                value={form.cantidad*form.precio}
+                value={this.state.form.cantidad*this.state.form.precio}
                 readonly
               />
               <br />
@@ -293,6 +446,8 @@ class App extends React.Component {
           <ModalFooter>
             <button
               className="btn btn-success"
+              id="insertar"
+              name="insertar"
               onClick={() => this.postQuery()}
             >
               Insertar
@@ -331,14 +486,21 @@ class App extends React.Component {
               />
               <br />
               <label htmlFor="nombreProducto">Nombre Producto</label>
-              <input
-                className="form-control"
-                type="text"
-                name="nombreProducto"
-                id="nombreProducto"
-                onChange={this.handleChange}
-                value={form.nombreProducto}
-              />
+              <FormControl fullWidth>
+              <Select
+                        fullWidth
+                        name='nombreProducto'
+                        id="nombreProducto"
+                        value={this.state.form.nombreProducto}
+                        onChange={this.handleChange}
+                    >
+                        {
+                            this.state.producto.map(item => (
+                                <MenuItem value={item.nombre}>{item.nombre}</MenuItem>   
+                            ))
+                        }    
+                    </Select>
+              </FormControl>
               <br />
               <label htmlFor="nombreVendedor">Nombre Vendedor</label>
               <input
@@ -443,6 +605,20 @@ class App extends React.Component {
             </button>
           </ModalFooter>
         </Modal>
+        <Modal isOpen={this.state.modalCantidad}>
+          <ModalBody>
+            La cantidad de stock es de: {this.state.cantidadMaxima}
+          </ModalBody>
+          <ModalFooter>
+            <button
+              className="btn btn-danger"
+              onClick={() => this.setState({ modalCantidad: false })}
+            >
+              Ok
+            </button>
+          </ModalFooter>
+        </Modal>
+        
       </>
     );
   }
