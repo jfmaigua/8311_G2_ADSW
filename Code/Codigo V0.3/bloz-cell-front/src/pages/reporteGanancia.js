@@ -2,10 +2,9 @@ import '../App.css';
 import {useEffect, useState} from 'react';
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
-
+import {Select, MenuItem, FormControl,InputLabel, Input} from "@mui/material"
 const URI = "http://localhost:3001/api/salida/"; 
 function BusquedaProducto() {
-
   const [productos, setProducto]= useState([]);
   const [tablaUsuarios, setTablaUsuarios]= useState([]);
   const [busqueda, setBusqueda]= useState("");
@@ -27,7 +26,7 @@ const handleChange=e=>{
 
 const filtrar=(terminoBusqueda)=>{
   var resultadosBusqueda=tablaUsuarios.filter((elemento)=>{
-    if(elemento.nombreProducto.toString().toLowerCase().includes(terminoBusqueda.toLowerCase())
+    if(elemento.tipoOferta.toString().toLowerCase().includes(terminoBusqueda.toLowerCase())
     ){
       return elemento;
     }
@@ -51,18 +50,29 @@ peticionGet();
     <div className="App" class="bg-light">
     <br /><br />
   <div class="col-12 text-center">
-  <h3>Reporte de Salida de Productos</h3>
+  <h3>Reporte de Ganancias</h3>
       
     </div> 
     <br /><br /> 
       <div class="container">
-        <input
-          className="form-control"
-          value={busqueda}
-          placeholder="Buscar un producto por Nombre"
-          onChange={handleChange}
-        />
-        <br /> 
+              <FormControl fullWidth>
+              <InputLabel id="demo-simple-select-label">Escoga un tipo de Oferta</InputLabel>
+              <Select
+              className="form-control" 
+              type="text"
+              labelId="demo-simple-select-label"
+              name="tipoOferta" 
+              id="tipoOferta"
+              value={busqueda}
+              onChange={handleChange}
+              input={<Input disableUnderline />}
+              style={{ borderBottom: "1" }}
+              >    
+                  <MenuItem value='Descuento'>Descuento</MenuItem>
+                  <MenuItem value='Promocion'>Promocion</MenuItem>
+              </Select>
+              </FormControl>
+        <br /> <br />
        <table className="table ">
             <thead>
                 <tr>

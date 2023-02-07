@@ -18,8 +18,22 @@ const url = "http://localhost:3001/api/salida";
 const url1 = "http://localhost:3001/api/products";
 
 class App extends React.Component {
-  //constructor(props) {
-    //super(props);
+
+  //Validar campos vacios
+  handleBlur = () => {
+     if (!this.state.form.nombreProducto || !this.state.form.nombreVendedor || !this.state.form.fecha || !this.state.form.cantidad || !this.state.form.tipoOferta) {
+      this.modalCamposVacios();
+    } else {
+      this.postQuery()
+    }
+  };
+    // Validar numero positivo
+    handlePositiveIntChange = (event) => {
+      const value = event.target.value;
+      if (!value || (value && /^[1-9]\d*$/.test(value))) {
+        this.setState({ cantidad: value });
+      }
+    };
   //Estado del data y del form
   state = {
     
@@ -44,11 +58,10 @@ class App extends React.Component {
     modalInsert: false,
     modalDelete: false,
     modalEdit: false,
-    modalCantidad: false
+    modalCantidad: false,
+    modalCamposVacios:false
   };
   
-  //this.handleChangeInput = this.handleChangeInput.bind(this);
-//}
   getQuery = () => {
     axios
       .get(url)
@@ -92,29 +105,38 @@ class App extends React.Component {
         this.getQuery();
       });
   };
-  putStock = () => {
-    let stockActualizar
-    for(let i=0;i<this.state.producto.length;i++){
-      if(this.state.form.nombreProducto===this.state.producto[i].nombre){
-        axios
-          .put(url1 + "/" + this.this.state.producto[i].idProducto, this.state.form)
-          .then((response) => {
-            this.setState({ modalEdit: false })
-            this.getQuery();
-          });
-      }
+
+  putStockQuery = () => {
+    var id = this.obtenerIDProducto(this.state.form.nombreProducto);
+    var formActualizado = {
+      idProducto: this.form.idProducto,
+      nombre: "",
+      marca: "",
+      modelo: "",
+      precio: "",
+      caracteristicas: "",
+      imagen: "",
+      cantidad: "",
+      categoria: "",
     }
+      .put(url1 + "/" + id, this.state.form)
+      .then((response) => {
+        this.setState({ modalEdit: false })
+        this.getQuery();
+      });
   };
+
   deleteQuery = () => {
     axios.delete(url + "/" + this.state.form.idProducto).then((response) => {
       this.setState({ modalDelete: false });
       this.getQuery();
     });
   };
+
   componentDidMount() {
     this.getQuery();
     this.getQueryProducto();
-    
+    //this.handlePositiveIntChange();
   }
   //Formato Fecha
   formatoFecha(fecha){
@@ -124,45 +146,7 @@ class App extends React.Component {
     var anio = fechaAux.getFullYear();
     return dia+"/"+mes+"/"+anio;
   }
-  /*
-   handleChangeInput(evento){
-    console.log("Hola key")
-    //destructurin de los valores enviados por el metodo onchange de cada input
-    const { name, value } = evento.target;
-    let regex = new RegExp("^[a-zA-Z ]+$");
-
-    if (regex.test(value)) {
-      console.log(name, value);
-      this.setState({
-        //al elemento dentro de [] es una key de cada parametro dentro del
-        //estado.
-        [name]: value
-      });
-    } else {
-      console.log("es numero");
-    }
-  }
-  */
-  // Funcion actualizar stock
-  actualizarStock(id,cantidad){
-    for(let i=0;i<this.state.producto.length;i++){
-      if(id === this.state.producto[i].nombre)
-        if(cantidad>this.state.producto[i].cantidad){
-        this.setState({cantidadMaxima: this.state.producto[i].cantidad});
-        this.modalCantidad();
-        //buttonInsertar.disabled = true;
-      }else{
-        //buttonInsertar.disabled = false;
-        this.setState({precio: this.state.producto[i].precio})
-        this.setState({
-          form: {
-            ...this.state.form,
-            precio: this.state.precio,
-          },
-        })
-      }
-    }
-  }  
+ 
   // Funcion control cantidad
   controlCantidad(id, cantidad){
     var buttonInsertar = document.getElementById('insertar');
@@ -184,12 +168,21 @@ class App extends React.Component {
       }
     }
   }
-
+  //Obtener IDproducto
+  obtenerIDProducto(nombre){
+    for(let j=0;j<this.state.producto.length;j++){
+      if(nombre === this.state.producto[j].nombre){
+        return this.state.producto[j].idProducto
+      }
+    }
+  }
   //Cambiar precio
   cambiarPrecio(){
+    var inputPrecio = document.getElementById('precio');
+    inputPrecio.disabled =false;
     for(let j=0;j<this.state.producto.length;j++){
-      console.log("nombre1: "+this.state.form.nombreProducto)
-      console.log("nombre2:"+this.state.producto[j].nombre)
+      //console.log("nombre1: "+this.state.form.nombreProducto)
+      //console.log("nombre2:"+this.state.producto[j].nombre)
       if(this.state.form.nombreProducto === this.state.producto[j].nombre){
         this.setState({precio: this.state.producto[j].precio})
         this.setState({
@@ -200,9 +193,14 @@ class App extends React.Component {
         })
       }
     }
+    inputPrecio.disabled =true;
   }
   //Controlador de cambios
   handleChange = (e) => {
+    //const value = e.target.value;
+    //if (!value || (value && /^[1-9]\d*$/.test(value))) {
+   //   this.setState({ cantidad: value });
+   // }
     e.stopPropagation()
     this.setState({
       form: {
@@ -210,8 +208,7 @@ class App extends React.Component {
         [e.target.name]: e.target.value,
       },
     });
-    console.log(this.state.form)
-    console.log(this.state.ofertas)
+
   };
   // Modal Cantidad
   modalCantidad = () => {
@@ -224,6 +221,13 @@ class App extends React.Component {
     this.setState({
       modalInsert: !this.state.modalInsert,
       form: { ...this.state.form, idProducto: this.state.data.length + 1 },
+    });
+  };
+
+   // Modal Campo vacio
+   modalCamposVacios = () => {
+    this.setState({
+      modalCamposVacios: !this.state.modalCamposVacios,
     });
   };
   modalInsertHide = () => {
@@ -264,6 +268,10 @@ class App extends React.Component {
     return (
       <>
       <Container>
+      <div class="col-12 text-center">
+      <br /><br />
+      <h3>Reporte de Salida de Productos</h3>
+      </div>
           <br />
           <Button
             className="btn btn-success"
@@ -388,7 +396,6 @@ class App extends React.Component {
               name="tipoOferta" 
               id="tipoOferta"
               value={this.state.form.tipoOferta}
-              //onBlur={()=>this.cambiarPrecio()}
               onChange={this.handleChange}
               >
                 {           
@@ -406,17 +413,19 @@ class App extends React.Component {
                 format='yyyy-MM-dd'
                 name="fecha"
                 id="fecha"
+                value={this.state.form.fecha}
                 onChange={this.handleChange}
               />
               <br />
               <label htmlFor="cantidad">Cantidad</label>
               <input
                 className="form-control"
-                type="number"
+                type="text"
                 name="cantidad"
                 id="cantidad"
                 onBlur={()=> this.controlCantidad(form.nombreProducto,form.cantidad)}
                 onChange={this.handleChange}
+
               />
               <br />
               <label htmlFor="precio">Precio</label>
@@ -426,7 +435,8 @@ class App extends React.Component {
                 name="precio"
                 id="precio"
                 onChange={this.handleChange}
-                value={this.state.precio}                
+                value={this.state.form.precio}
+                readOnly               
               />
               <br />
               <label htmlFor="total">Total</label>
@@ -437,7 +447,7 @@ class App extends React.Component {
                 id="total"
                 onChange={this.handleChange}
                 value={this.state.form.cantidad*this.state.form.precio}
-                readonly
+                //readonly
               />
               <br />
             </div>
@@ -448,7 +458,7 @@ class App extends React.Component {
               className="btn btn-success"
               id="insertar"
               name="insertar"
-              onClick={() => this.postQuery()}
+              onClick={()=>this.handleBlur()}
             >
               Insertar
             </button>
@@ -492,9 +502,10 @@ class App extends React.Component {
                         name='nombreProducto'
                         id="nombreProducto"
                         value={this.state.form.nombreProducto}
+                        onBlur={()=>this.cambiarPrecio()}
                         onChange={this.handleChange}
                     >
-                        {
+                        {           
                             this.state.producto.map(item => (
                                 <MenuItem value={item.nombre}>{item.nombre}</MenuItem>   
                             ))
@@ -508,51 +519,62 @@ class App extends React.Component {
                 type="text"
                 name="nombreVendedor"
                 id="nombreVendedor"
+                value={this.state.form.nombreVendedor}
                 onChange={this.handleChange}
-                value={form.nombreVendedor}
               />
               <br />
               <label htmlFor="tipoOferta">Tipo Oferta</label>
-              <select
+              <FormControl fullWidth>
+              <Select
               className="form-control" 
               type="text"
               name="tipoOferta" 
               id="tipoOferta"
+              value={this.state.form.tipoOferta}
+              //onBlur={()=>this.cambiarPrecio()}
               onChange={this.handleChange}
-              value={form.tipoOferta}
               >
-                <option value="Descuento">Descuento</option>
-                <option value="Promoción">Promoción</option>
-              </select>
+                {           
+                  this.state.ofertas.map(item1 => (
+                  <MenuItem value={item1.tipo}>{item1.tipo}</MenuItem>   
+                  ))
+                } 
+              </Select>
+              </FormControl>
               <br />
               <label htmlFor="fecha">Fecha</label>
               <input
                 className="form-control"
                 type="date"
+                format='yyyy-MM-dd'
                 name="fecha"
                 id="fecha"
+                value={this.state.form.fecha}
                 onChange={this.handleChange}
-                value={form.fecha}
-              />
-              <br />
-              <label htmlFor="precio">Precio</label>
-              <input
-                className="form-control"
-                type="number"
-                name="precio"
-                id="precio"
-                onChange={this.handleChange}
-                value={form.precio}
               />
               <br />
               <label htmlFor="cantidad">Cantidad</label>
               <input
                 className="form-control"
-                type="number"
+                type="text"
                 name="cantidad"
                 id="cantidad"
+                value={this.state.form.cantidad}
+                onBlur={()=> this.controlCantidad(form.nombreProducto,form.cantidad)}
+                //onKeyDown={this.handlePositiveIntChange}
                 onChange={this.handleChange}
-                value={form.cantidad}
+
+              />
+              <br />
+              <label htmlFor="precio">Precio</label>
+              <input
+                className="form-control"
+                type="text"
+                name="precio"
+                id="precio"
+                onChange={this.handleChange}
+                value={this.state.form.precio}
+                readonly                
               />
               <br />
               <label htmlFor="total">Total</label>
@@ -562,7 +584,7 @@ class App extends React.Component {
                 name="total"
                 id="total"
                 onChange={this.handleChange}
-                value={form.cantidad*form.precio}
+                value={this.state.form.cantidad*this.state.form.precio}
                 readonly
               />
               <br />
@@ -618,7 +640,19 @@ class App extends React.Component {
             </button>
           </ModalFooter>
         </Modal>
-        
+        <Modal isOpen={this.state.modalCamposVacios}>
+          <ModalBody>
+           Error: Existen campos vacio en el formulario.
+          </ModalBody>
+          <ModalFooter>
+            <button
+              className="btn btn-danger"
+              onClick={() => this.setState({ modalCamposVacios: false })}
+            >
+              Ok
+            </button>
+          </ModalFooter>
+        </Modal>
       </>
     );
   }

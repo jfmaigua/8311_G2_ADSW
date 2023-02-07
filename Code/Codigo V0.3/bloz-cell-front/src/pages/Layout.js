@@ -1,7 +1,7 @@
 import { Outlet, Link } from 'react-router-dom';
 
 const Layout = () =>{
-    return <div>
+    return <div className="App" class="bg-light">
         <nav>
             <ul>
                 <li>
@@ -16,9 +16,11 @@ const Layout = () =>{
                 <li>
                     <Link to="/reportesSalida">Reporte de Salida de Producto</Link>
                 </li>
+                <li>
+                    <Link to="/reporteGanancia">Reporte de Ganancia</Link>
+                </li>
             </ul>
         </nav>
-        <hr/>
         <Outlet />
     </div>
 }
