@@ -12,19 +12,51 @@ import {
 } from "reactstrap";
 import React from "react";
 import axios from "axios";
+import swal from 'sweetalert';
 import {Select, MenuItem, FormControl} from "@mui/material"
 
 const url = "http://localhost:3001/api/salida";
 const url1 = "http://localhost:3001/api/products";
+    
+const mostrarAlertaFecha = () => {
+  swal({
+      title: "¡Ocurrio un error!",
+      text: "¡La fecha de ingreso debe ser la actual!",
+      icon: "warning",
+      buton: "OK!",
+  });
+}
+    
+const mostrarAlertaNombre = () => {
+  swal({
+      title: "¡Ocurrio un error!",
+      text: "¡El nombre del vendedor no puede contener numeros!",
+      icon: "warning",
+      buton: "OK!",
+  });
+}
+    
+const mostrarAlertaCantidad = () => {
+  swal({
+      title: "¡Ocurrio un error!",
+      text: "¡La cantidad no puedo menor a 0!",
+      icon: "warning",
+      buton: "OK!",
+  });
+}
 
 class App extends React.Component {
 
   //Validar campos vacios
   handleBlur = () => {
-     if (!this.state.form.nombreProducto || !this.state.form.nombreVendedor || !this.state.form.fecha || !this.state.form.cantidad || !this.state.form.tipoOferta) {
+  
+     if (!this.state.form.nombreProducto || !this.state.form.nombreVendedor || !this.state.form.fecha || !this.state.form.cantidad || !this.state.form.tipoOferta ) {
+        
       this.modalCamposVacios();
+     
     } else {
       this.postQuery()
+      window.location.reload()
     }
   };
     // Validar numero positivo
@@ -55,6 +87,7 @@ class App extends React.Component {
       cantidad: "",
       total: "",
     },
+    errors: {},
     modalInsert: false,
     modalDelete: false,
     modalEdit: false,
@@ -67,6 +100,7 @@ class App extends React.Component {
       .get(url)
       .then((response) => {
         this.setState({ data: response.data.data });
+        
       })
       .catch((error) => {
         console.log(error.message);
@@ -103,6 +137,7 @@ class App extends React.Component {
       .then((response) => {
         this.setState({ modalEdit: false })
         this.getQuery();
+        window.location.reload()
       });
   };
 
@@ -123,6 +158,7 @@ class App extends React.Component {
       .then((response) => {
         this.setState({ modalEdit: false })
         this.getQuery();
+        window.location.reload()
       });
   };
 
@@ -130,6 +166,7 @@ class App extends React.Component {
     axios.delete(url + "/" + this.state.form.idProducto).then((response) => {
       this.setState({ modalDelete: false });
       this.getQuery();
+      window.location.reload()
     });
   };
 
@@ -197,18 +234,41 @@ class App extends React.Component {
   }
   //Controlador de cambios
   handleChange = (e) => {
-    //const value = e.target.value;
-    //if (!value || (value && /^[1-9]\d*$/.test(value))) {
-   //   this.setState({ cantidad: value });
-   // }
-    e.stopPropagation()
+    const name = e.target.name;
+    const value = e.target.value;
+   
+    /*  // Validar el campo cantidad con una expresión regular que solo permita números enteros positivos
+    if (name === "cantidad" && !/^[1-9]+$/.test(value)) {
+      mostrarAlertaCantidad();
+      
+      return; // Si el valor no es válido, detener la ejecución de la función
+      
+    }*/
+    // Validar nombreVendedor con una expresión regular que solo permita letras
+    if (name === "nombreVendedor" && !/^[a-zA-Z]+$/.test(value)) {
+      mostrarAlertaNombre();
+      //alert('El nombre solo debe contener Letras');
+      return; // Si el valor no es válido, detener la ejecución de la función
+      
+    }
+     // Validar la fecha actual
+    if (name === "fecha") {
+      const currentDate = new Date().toISOString().substr(0, 10);
+      if (value !== currentDate) {
+        mostrarAlertaFecha();
+        //alert("La fecha debe ser la fecha actual");
+        return; // Si el valor no es válido, detener la ejecución de la función
+      }
+    }
+    
+  
+    // Actualizar el estado del componente con el nuevo valor
     this.setState({
       form: {
         ...this.state.form,
-        [e.target.name]: e.target.value,
+        [name]: value,
       },
     });
-
   };
   // Modal Cantidad
   modalCantidad = () => {
@@ -223,6 +283,22 @@ class App extends React.Component {
       form: { ...this.state.form, idProducto: this.state.data.length + 1 },
     });
   };
+  // Función para limpiar el formulario
+limpiarFormulario = () => {
+  this.setState({
+    
+      form: {
+        idProducto: "",
+        nombreProducto: "",
+        nombreVendedor: "",
+        tipoOferta: "",
+        fecha: "",
+        precio: "",
+        cantidad: "",
+        total: "",
+      }, 
+  });
+};
 
    // Modal Campo vacio
    modalCamposVacios = () => {
@@ -277,6 +353,7 @@ class App extends React.Component {
             className="btn btn-success"
             onClick={() => {
               this.setState({ form: null, tipoModal: "insertar" });
+              this.limpiarFormulario();
               this.modalInsert(0);
             }}
           >
@@ -383,6 +460,7 @@ class App extends React.Component {
                 className="form-control"
                 type="text"
                 name="nombreVendedor"
+                pattern="[A-Za-záéíóúñÑüÜ\s]+" 
                 id="nombreVendedor"
                 value={this.state.form.nombreVendedor}
                 onChange={this.handleChange}
@@ -420,7 +498,7 @@ class App extends React.Component {
               <label htmlFor="cantidad">Cantidad</label>
               <input
                 className="form-control"
-                type="text"
+                type="number"
                 name="cantidad"
                 id="cantidad"
                 onBlur={()=> this.controlCantidad(form.nombreProducto,form.cantidad)}
@@ -455,6 +533,8 @@ class App extends React.Component {
 
           <ModalFooter>
             <button
+              type="submit"
+              
               className="btn btn-success"
               id="insertar"
               name="insertar"
@@ -541,17 +621,7 @@ class App extends React.Component {
                 } 
               </Select>
               </FormControl>
-              <br />
-              <label htmlFor="fecha">Fecha</label>
-              <input
-                className="form-control"
-                type="date"
-                format='yyyy-MM-dd'
-                name="fecha"
-                id="fecha"
-                value={this.state.form.fecha}
-                onChange={this.handleChange}
-              />
+              
               <br />
               <label htmlFor="cantidad">Cantidad</label>
               <input
