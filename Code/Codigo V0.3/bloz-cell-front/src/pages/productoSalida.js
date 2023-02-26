@@ -26,7 +26,7 @@ const mostrarAlertaFecha = () => {
       buton: "OK!",
   });
 }
-    
+   
 const mostrarAlertaNombre = () => {
   swal({
       title: "¡Ocurrio un error!",
@@ -35,7 +35,7 @@ const mostrarAlertaNombre = () => {
       buton: "OK!",
   });
 }
-    
+
 const mostrarAlertaCantidad = () => {
   swal({
       title: "¡Ocurrio un error!",
@@ -45,30 +45,46 @@ const mostrarAlertaCantidad = () => {
   });
 }
 
-class App extends React.Component {
+class App extends React.Component {post
+  //Validacion cantidad solo numero positivos
+  handleKeyPress(event) {
+    const regex = /^[1-9]\d*$/;
+    const inputValue = event.key;
+    if (!regex.test(inputValue)) {
+      event.preventDefault(); // Cancela la pulsación de tecla si el valor ingresado no es válido
+    }
+  } 
 
   //Validar campos vacios
   handleBlur = () => {
-  
-     if (!this.state.form.nombreProducto || !this.state.form.nombreVendedor || !this.state.form.fecha || !this.state.form.cantidad || !this.state.form.tipoOferta ) {
-        
+     if (!this.state.form.nombreProducto || !this.state.form.nombreVendedor || !this.state.form.fecha || !this.state.form.cantidad || !this.state.form.tipoOferta ) { 
       this.modalCamposVacios();
-     
     } else {
+      this.actualizarStock()
       this.postQuery()
       window.location.reload()
     }
   };
-    // Validar numero positivo
-    handlePositiveIntChange = (event) => {
-      const value = event.target.value;
-      if (!value || (value && /^[1-9]\d*$/.test(value))) {
-        this.setState({ cantidad: value });
-      }
-    };
+
+  //Validar campos vacios en actualizar
+  handleBlurActualizar = () => {
+    if (!this.state.form.nombreProducto || !this.state.form.nombreVendedor || !this.state.form.fecha || !this.state.form.cantidad || !this.state.form.tipoOferta ) { 
+     this.modalCamposVacios();
+   } else {
+     this.actualizarStock()
+     this.putQuery()
+     window.location.reload()
+   }
+  };
+
+  //Actualizar stock al eliminar
+  handleBlurEliminar = () => {
+    this.actualizarStockEliminacion(); 
+    this.deleteQuery()
+  }
+
   //Estado del data y del form
   state = {
-    
     data: [],
     producto:[],
     nombreProducto: "",
@@ -77,6 +93,17 @@ class App extends React.Component {
     nombre:"",
     ofertas:[{tipo:"Descuento"},{tipo:"Promocion"}],
     cantidadMaxima: 0,
+    productos: {
+      idProducto: "",
+      nombre: "",
+      marca: "",
+      modelo: "",
+      precio: "",
+      caracteristicas: "",
+      imagen: "",
+      cantidad: "",
+      categoria: "",
+    },
     form: {
       idProducto: "",
       nombreProducto: "",
@@ -105,8 +132,9 @@ class App extends React.Component {
       .catch((error) => {
         console.log(error.message);
       });
-      console.log(this.state.data)
+      console.log(this.state.data.data)
   };
+
   getQueryProducto = () => {
     axios
       .get(url1)
@@ -116,7 +144,7 @@ class App extends React.Component {
       .catch((error) => {
         console.log(error.message);
       });
-      console.log(this.state.producto)
+      console.log(this.state.producto.data)
   };
 
   postQuery = async () => {
@@ -140,26 +168,53 @@ class App extends React.Component {
         window.location.reload()
       });
   };
-
-  putStockQuery = () => {
-    var id = this.obtenerIDProducto(this.state.form.nombreProducto);
-    var formActualizado = {
-      idProducto: this.form.idProducto,
-      nombre: "",
-      marca: "",
-      modelo: "",
-      precio: "",
-      caracteristicas: "",
-      imagen: "",
-      cantidad: "",
-      categoria: "",
+  actualizarStock(){
+    for(let i=0;i<this.state.producto.length;i++){
+      if(this.state.form.nombreProducto === this.state.producto[i].nombre){
+        const actualizarProducto = {
+          idProducto: this.state.producto[i].idProducto,
+          nombre: this.state.producto[i].nombre,
+          marca: this.state.producto[i].marca,
+          modelo: this.state.producto[i].modelo,
+          precio: this.state.producto[i].precio,
+          caracteristicas:this.state.producto[i].caracteristicas,
+          imagen: this.state.producto[i].imagen,
+          cantidad: this.state.producto[i].cantidad-this.state.form.cantidad,
+          categoria: this.state.producto[i].categoria,
+        };
+        axios
+          .put(url1 + "/" + actualizarProducto.idProducto, actualizarProducto)
+          .then((response) => {
+            console.log(response.data);
+          });
+      }
     }
-      .put(url1 + "/" + id, this.state.form)
-      .then((response) => {
-        this.setState({ modalEdit: false })
-        this.getQuery();
-        window.location.reload()
-      });
+  }
+
+  actualizarStockEliminacion(){
+    for(let i=0;i<this.state.producto.length;i++){
+      if(this.state.form.nombreProducto === this.state.producto[i].nombre){
+        const actualizarProducto = {
+          idProducto: this.state.producto[i].idProducto,
+          nombre: this.state.producto[i].nombre,
+          marca: this.state.producto[i].marca,
+          modelo: this.state.producto[i].modelo,
+          precio: this.state.producto[i].precio,
+          caracteristicas:this.state.producto[i].caracteristicas,
+          imagen: this.state.producto[i].imagen,
+          cantidad: this.state.producto[i].cantidad+this.state.form.cantidad,
+          categoria: this.state.producto[i].categoria,
+        };
+        axios
+          .put(url1 + "/" + actualizarProducto.idProducto, actualizarProducto)
+          .then((response) => {
+            console.log(response.data);
+          });
+      }
+    }
+  }
+  putStockQuery = () => {
+    
   };
 
   deleteQuery = () => {
@@ -205,6 +260,29 @@ class App extends React.Component {
       }
     }
   }
+  // Funcion control cantidad actualizar
+  controlCantidadActualizar(id, cantidad){
+    var buttonInsertar = document.getElementById('actualizar');
+    for(let i=0;i<this.state.producto.length;i++){
+      if(id === this.state.producto[i].nombre)
+        if(cantidad>this.state.producto[i].cantidad){
+        this.setState({cantidadMaxima: this.state.producto[i].cantidad});
+        this.modalCantidad();
+        buttonInsertar.disabled = true;
+      }else{
+        buttonInsertar.disabled = false;
+        this.setState({precio: this.state.producto[i].precio})
+        this.setState({
+          form: {
+            ...this.state.form,
+            precio: this.state.precio,
+          },
+        })
+      }
+    }
+  }
+  
+
   //Obtener IDproducto
   obtenerIDProducto(nombre){
     for(let j=0;j<this.state.producto.length;j++){
@@ -218,8 +296,6 @@ class App extends React.Component {
     var inputPrecio = document.getElementById('precio');
     inputPrecio.disabled =false;
     for(let j=0;j<this.state.producto.length;j++){
-      //console.log("nombre1: "+this.state.form.nombreProducto)
-      //console.log("nombre2:"+this.state.producto[j].nombre)
       if(this.state.form.nombreProducto === this.state.producto[j].nombre){
         this.setState({precio: this.state.producto[j].precio})
         this.setState({
@@ -237,15 +313,14 @@ class App extends React.Component {
     const name = e.target.name;
     const value = e.target.value;
    
-    /*  // Validar el campo cantidad con una expresión regular que solo permita números enteros positivos
-    if (name === "cantidad" && !/^[1-9]+$/.test(value)) {
+    // Validar el campo cantidad con una expresión regular que solo permita números enteros positivos
+    if (name === "cantidad" && !/^[0-9]*[1-9][0-9]*$/.test(value)) {
       mostrarAlertaCantidad();
-      
       return; // Si el valor no es válido, detener la ejecución de la función
       
-    }*/
+    }
     // Validar nombreVendedor con una expresión regular que solo permita letras
-    if (name === "nombreVendedor" && !/^[a-zA-Z]+$/.test(value)) {
+    if (name === "nombreVendedor" && !/^^[a-zA-ZñÑ ]*$/.test(value)) {
       mostrarAlertaNombre();
       //alert('El nombre solo debe contener Letras');
       return; // Si el valor no es válido, detener la ejecución de la función
@@ -286,7 +361,6 @@ class App extends React.Component {
   // Función para limpiar el formulario
 limpiarFormulario = () => {
   this.setState({
-    
       form: {
         idProducto: "",
         nombreProducto: "",
@@ -438,22 +512,25 @@ limpiarFormulario = () => {
               />
               <br />
               <label htmlFor="nombreProducto">Nombre Producto</label>
-              <FormControl fullWidth>
+              <FormControl fullWidth
+              style={{paddingTop: '0px', paddingBottom: '0px'}}>
               <Select
                         fullWidth
                         name='nombreProducto'
                         id="nombreProducto"
+                        style={{paddingTop: '0px', paddingBottom: '0px'}}
                         value={this.state.form.nombreProducto}
                         onBlur={()=>this.cambiarPrecio()}
                         onChange={this.handleChange}
                     >
                         {           
                             this.state.producto.map(item => (
-                                <MenuItem value={item.nombre}>{item.nombre}</MenuItem>   
+                                <MenuItem value={item.nombre} >{item.nombre}</MenuItem>   
                             ))
                         }    
                     </Select>
               </FormControl>
+              <br />
               <br />
               <label htmlFor="nombreVendedor">Nombre Vendedor</label>
               <input
@@ -484,6 +561,7 @@ limpiarFormulario = () => {
               </Select>
               </FormControl>
               <br />
+              <br />
               <label htmlFor="fecha">Fecha</label>
               <input
                 className="form-control"
@@ -498,9 +576,11 @@ limpiarFormulario = () => {
               <label htmlFor="cantidad">Cantidad</label>
               <input
                 className="form-control"
-                type="number"
+                type="text"
                 name="cantidad"
                 id="cantidad"
+                pattern="^[0-9]*[1-9][0-9]*$"
+                onKeyPress={this.handleKeyPress}
                 onBlur={()=> this.controlCantidad(form.nombreProducto,form.cantidad)}
                 onChange={this.handleChange}
 
@@ -564,7 +644,7 @@ limpiarFormulario = () => {
 
           <ModalBody>
             <div className="form-group">
-              <label htmlFor="idProducto">ID</label>
+            <label htmlFor="idProducto">ID</label>
               <input
                 className="form-control"
                 type="text"
@@ -575,6 +655,18 @@ limpiarFormulario = () => {
                 readOnly
               />
               <br />
+              <label htmlFor="nombre">Nombre</label>
+              <input
+                className="form-control"
+                type="text"
+                name='nombreProducto'
+                id="nombreProducto"
+                value={this.state.form.nombreProducto}
+                onChange={this.handleChange}
+                readOnly
+              />
+              <br />
+              {/*
               <label htmlFor="nombreProducto">Nombre Producto</label>
               <FormControl fullWidth>
               <Select
@@ -584,6 +676,7 @@ limpiarFormulario = () => {
                         value={this.state.form.nombreProducto}
                         onBlur={()=>this.cambiarPrecio()}
                         onChange={this.handleChange}
+                        readOnly
                     >
                         {           
                             this.state.producto.map(item => (
@@ -592,12 +685,13 @@ limpiarFormulario = () => {
                         }    
                     </Select>
               </FormControl>
-              <br />
+              */}
               <label htmlFor="nombreVendedor">Nombre Vendedor</label>
               <input
                 className="form-control"
                 type="text"
                 name="nombreVendedor"
+                pattern="[A-Za-záéíóúñÑüÜ\s]+" 
                 id="nombreVendedor"
                 value={this.state.form.nombreVendedor}
                 onChange={this.handleChange}
@@ -611,7 +705,6 @@ limpiarFormulario = () => {
               name="tipoOferta" 
               id="tipoOferta"
               value={this.state.form.tipoOferta}
-              //onBlur={()=>this.cambiarPrecio()}
               onChange={this.handleChange}
               >
                 {           
@@ -621,7 +714,19 @@ limpiarFormulario = () => {
                 } 
               </Select>
               </FormControl>
-              
+              <br />
+              <br />
+              <label htmlFor="fecha">Fecha</label>
+              <input
+                className="form-control"
+                type="date"
+                format='yyyy-MM-dd'
+                name="fecha"
+                id="fecha"
+                onChange={this.handleChange}
+                value={form.fecha}
+                readOnly
+              />
               <br />
               <label htmlFor="cantidad">Cantidad</label>
               <input
@@ -629,22 +734,20 @@ limpiarFormulario = () => {
                 type="text"
                 name="cantidad"
                 id="cantidad"
-                value={this.state.form.cantidad}
-                onBlur={()=> this.controlCantidad(form.nombreProducto,form.cantidad)}
-                //onKeyDown={this.handlePositiveIntChange}
                 onChange={this.handleChange}
-
+                value={form.cantidad}
+                readOnly
               />
               <br />
               <label htmlFor="precio">Precio</label>
               <input
                 className="form-control"
-                type="text"
+                type="number"
                 name="precio"
                 id="precio"
                 onChange={this.handleChange}
-                value={this.state.form.precio}
-                readonly                
+                value={form.precio}
+                readOnly               
               />
               <br />
               <label htmlFor="total">Total</label>
@@ -654,7 +757,7 @@ limpiarFormulario = () => {
                 name="total"
                 id="total"
                 onChange={this.handleChange}
-                value={this.state.form.cantidad*this.state.form.precio}
+                value={form.total}
                 readonly
               />
               <br />
@@ -664,7 +767,9 @@ limpiarFormulario = () => {
           <ModalFooter>
             <button 
               className="btn btn-primary" 
-              onClick={() => this.putQuery()}
+              id="actualizar"
+              name="actualizar"
+              onClick={()=>this.handleBlurActualizar()}
               >
               Actualizar
             </button>
@@ -685,7 +790,7 @@ limpiarFormulario = () => {
           <ModalFooter>
             <button
               className="btn btn-danger"
-              onClick={() => this.deleteQuery()}
+              onClick={()=>this.handleBlurEliminar()}
             >
               Sí
             </button>
